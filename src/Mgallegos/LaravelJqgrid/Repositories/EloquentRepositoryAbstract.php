@@ -9,172 +9,150 @@
 
 namespace Mgallegos\LaravelJqgrid\Repositories;
 
-abstract class EloquentRepositoryAbstract implements RepositoryInterface{
-
-
+abstract class EloquentRepositoryAbstract implements RepositoryInterface
+{
     /**
-     * Database
+     * Database.
      *
      * @var Illuminate\Database\Eloquent\Model or Illuminate\Database\Query
-     *
      */
     protected $Database;
 
     /**
-     * Visible columns
+     * Visible columns.
      *
-     * @var Array
-     *
+     * @var array
      */
     public $visibleColumns;
 
     /**
-     * OrderBy
+     * OrderBy.
      *
      * @var array
-     *
      */
-    protected $orderBy = array(array());
-
+    protected $orderBy = [[]];
 
     /**
      * Calculate the number of rows. It's used for paging the result.
      *
-     * @param  array $filters
-     *  An array of filters, example: array(array('field'=>'column index/name 1','op'=>'operator','data'=>'searched string column 1'), array('field'=>'column index/name 2','op'=>'operator','data'=>'searched string column 2'))
-     *  The 'field' key will contain the 'index' column property if is set, otherwise the 'name' column property.
-     *  The 'op' key will contain one of the following operators: '=', '<', '>', '<=', '>=', '<>', '!=','like', 'not like', 'is in', 'is not in'.
-     *  when the 'operator' is 'like' the 'data' already contains the '%' character in the appropiate position.
-     *  The 'data' key will contain the string searched by the user.
-     * @return integer
-     *  Total number of rows
+     * @param array $filters
+     *                       An array of filters, example: array(array('field'=>'column index/name 1','op'=>'operator','data'=>'searched string column 1'), array('field'=>'column index/name 2','op'=>'operator','data'=>'searched string column 2'))
+     *                       The 'field' key will contain the 'index' column property if is set, otherwise the 'name' column property.
+     *                       The 'op' key will contain one of the following operators: '=', '<', '>', '<=', '>=', '<>', '!=','like', 'not like', 'is in', 'is not in'.
+     *                       when the 'operator' is 'like' the 'data' already contains the '%' character in the appropiate position.
+     *                       The 'data' key will contain the string searched by the user.
+     *
+     * @return int
+     *             Total number of rows
      */
-    public function getTotalNumberOfRows(array $filters = array())
+    public function getTotalNumberOfRows(array $filters = [])
     {
-        return  intval($this->Database->whereNested(function($query) use ($filters)
-                {
-                    foreach ($filters as $filter)
-                    {
-                        if($filter['op'] == 'is in')
-                        {
-                            $query->whereIn($filter['field'], explode(',',$filter['data']));
-                            continue;
-                        }
+        return  intval($this->Database->whereNested(function ($query) use ($filters) {
+            foreach ($filters as $filter) {
+                if ($filter['op'] == 'is in') {
+                    $query->whereIn($filter['field'], explode(',', $filter['data']));
+                    continue;
+                }
 
-                        if($filter['op'] == 'is not in')
-                        {
-                            $query->whereNotIn($filter['field'], explode(',',$filter['data']));
-                            continue;
-                        }
+                if ($filter['op'] == 'is not in') {
+                    $query->whereNotIn($filter['field'], explode(',', $filter['data']));
+                    continue;
+                }
 
-                        if($filter['op'] == 'is null')
-                        {
-                            $query->whereNull($filter['field']);
-                            continue;
-                        }
+                if ($filter['op'] == 'is null') {
+                    $query->whereNull($filter['field']);
+                    continue;
+                }
 
-                        if($filter['op'] == 'is not null')
-                        {
-                            $query->whereNotNull($filter['field']);
-                            continue;
-                        }
+                if ($filter['op'] == 'is not null') {
+                    $query->whereNotNull($filter['field']);
+                    continue;
+                }
 
-                        $query->where($filter['field'], $filter['op'], $filter['data']);
-                    }
-                })
+                $query->where($filter['field'], $filter['op'], $filter['data']);
+            }
+        })
                 ->count());
     }
-
 
     /**
      * Get the rows data to be shown in the grid.
      *
-     * @param  integer $limit
-     *  Number of rows to be shown into the grid
-     * @param  integer $offset
-     *  Start position
-     * @param  string $orderBy
-     *  Column name to order by.
-     * @param  array $sordvisibleColumns
-     *  Sorting order
-     * @param  array $filters
-     *  An array of filters, example: array(array('field'=>'column index/name 1','op'=>'operator','data'=>'searched string column 1'), array('field'=>'column index/name 2','op'=>'operator','data'=>'searched string column 2'))
-     *  The 'field' key will contain the 'index' column property if is set, otherwise the 'name' column property.
-     *  The 'op' key will contain one of the following operators: '=', '<', '>', '<=', '>=', '<>', '!=','like', 'not like', 'is in', 'is not in'.
-     *  when the 'operator' is 'like' the 'data' already contains the '%' character in the appropiate position.
-     *  The 'data' key will contain the string searched by the user.
+     * @param int    $limit
+     *                                   Number of rows to be shown into the grid
+     * @param int    $offset
+     *                                   Start position
+     * @param string $orderBy
+     *                                   Column name to order by.
+     * @param array  $sordvisibleColumns
+     *                                   Sorting order
+     * @param array  $filters
+     *                                   An array of filters, example: array(array('field'=>'column index/name 1','op'=>'operator','data'=>'searched string column 1'), array('field'=>'column index/name 2','op'=>'operator','data'=>'searched string column 2'))
+     *                                   The 'field' key will contain the 'index' column property if is set, otherwise the 'name' column property.
+     *                                   The 'op' key will contain one of the following operators: '=', '<', '>', '<=', '>=', '<>', '!=','like', 'not like', 'is in', 'is not in'.
+     *                                   when the 'operator' is 'like' the 'data' already contains the '%' character in the appropiate position.
+     *                                   The 'data' key will contain the string searched by the user.
+     *
      * @return array
-     *  An array of array, each array will have the data of a row.
-     *  Example: array(array('row 1 col 1','row 1 col 2'), array('row 2 col 1','row 2 col 2'))
+     *               An array of array, each array will have the data of a row.
+     *               Example: array(array('row 1 col 1','row 1 col 2'), array('row 2 col 1','row 2 col 2'))
      */
-    public function getRows($limit, $offset, $orderBy = null, $sord = null, array $filters = array())
+    public function getRows($limit, $offset, $orderBy = null, $sord = null, array $filters = [])
     {
-        if(!is_null($orderBy) || !is_null($sord))
-        {
-            $this->orderBy = array(array($orderBy, $sord));
+        if (!is_null($orderBy) || !is_null($sord)) {
+            $this->orderBy = [[$orderBy, $sord]];
         }
 
-        if($limit == 0)
-        {
+        if ($limit == 0) {
             $limit = 1;
         }
 
-        $orderByRaw = array();
+        $orderByRaw = [];
 
-        foreach ($this->orderBy as $orderBy)
-        {
-            array_push($orderByRaw, implode(' ',$orderBy));
+        foreach ($this->orderBy as $orderBy) {
+            array_push($orderByRaw, implode(' ', $orderBy));
         }
 
-        $orderByRaw = implode(',',$orderByRaw);
+        $orderByRaw = implode(',', $orderByRaw);
 
-        $rows = $this->Database->whereNested(function($query) use ($filters)
-            {
-                foreach ($filters as $filter)
-                {
-                    if($filter['op'] == 'is in')
-                    {
-                        $query->whereIn($filter['field'], explode(',',$filter['data']));
-                        continue;
-                    }
-
-                    if($filter['op'] == 'is not in')
-                    {
-                        $query->whereNotIn($filter['field'], explode(',',$filter['data']));
-                        continue;
-                    }
-
-                    if($filter['op'] == 'is null')
-                    {
-                        $query->whereNull($filter['field']);
-                        continue;
-                    }
-
-                    if($filter['op'] == 'is not null')
-                    {
-                        $query->whereNotNull($filter['field']);
-                        continue;
-                    }
-
-                    $query->where($filter['field'], $filter['op'], $filter['data']);
+        $rows = $this->Database->whereNested(function ($query) use ($filters) {
+            foreach ($filters as $filter) {
+                if ($filter['op'] == 'is in') {
+                    $query->whereIn($filter['field'], explode(',', $filter['data']));
+                    continue;
                 }
-            })
+
+                if ($filter['op'] == 'is not in') {
+                    $query->whereNotIn($filter['field'], explode(',', $filter['data']));
+                    continue;
+                }
+
+                if ($filter['op'] == 'is null') {
+                    $query->whereNull($filter['field']);
+                    continue;
+                }
+
+                if ($filter['op'] == 'is not null') {
+                    $query->whereNotNull($filter['field']);
+                    continue;
+                }
+
+                $query->where($filter['field'], $filter['op'], $filter['data']);
+            }
+        })
             ->take($limit)
             ->skip($offset)
             ->orderByRaw($orderByRaw)
             ->get(array_keys($this->visibleColumns));
 
-        if(!is_array($rows))
-        {
+        if (!is_array($rows)) {
             $rows = $rows->toArray();
         }
 
-        foreach ($rows as &$row)
-        {
+        foreach ($rows as &$row) {
             $row = array_values((array) $row);
         }
 
         return $rows;
     }
-
 }
