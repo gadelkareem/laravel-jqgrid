@@ -9,50 +9,47 @@
 
 namespace Mgallegos\LaravelJqgrid\Encoders;
 
-use Mgallegos\LaravelJqgrid\Repositories\RepositoryInterface;
 use Exception;
+use Mgallegos\LaravelJqgrid\Repositories\RepositoryInterface;
 
-class JqGridJsonEncoder implements RequestedDataInterface {
-
+class JqGridJsonEncoder implements RequestedDataInterface
+{
     /**
      * Echo in a jqGrid compatible format the data requested by a grid.
      *
      * @param RepositoryInterface $dataRepository
-     *	An implementation of the RepositoryInterface
-     * @param  array $postedData
-     *	All jqGrid posted data
+     *                                            An implementation of the RepositoryInterface
+     * @param array               $postedData
+     *                                            All jqGrid posted data
+     *
      * @return string
-     *	String of a jqGrid compatible data format: xml, json, jsonp, array, xmlstring, jsonstring.
+     *                String of a jqGrid compatible data format: xml, json, jsonp, array, xmlstring, jsonstring.
      */
-    public function encodeRequestedData(RepositoryInterface $Repository,  $postedData)
+    public function encodeRequestedData(RepositoryInterface $Repository, $postedData)
     {
         $page = $postedData['page']; // get the requested page
         $limit = $postedData['rows']; // get how many rows we want to have into the grid
         $sidx = $postedData['sidx']; // get index row - i.e. user click to sort
         $sord = $postedData['sord']; // get the direction
 
-        if(isset($postedData['filters']))
-        {
-            $filters = json_decode(str_replace('\'','"',$postedData['filters']), true);
+        if (isset($postedData['filters'])) {
+            $filters = json_decode(str_replace('\'', '"', $postedData['filters']), true);
         }
 
-        if(!$sidx || empty($sidx))
-        {
+        if (!$sidx || empty($sidx)) {
             $sidx = null;
             $sord = null;
         }
 
-        if(isset($filters['rules']) && is_array($filters['rules']))
-        {
-            foreach ($filters['rules'] as $k => &$filter)
-            {
+        if (isset($filters['rules']) && is_array($filters['rules'])) {
+            foreach ($filters['rules'] as $k => &$filter) {
                 //removing fake fields
-                if(!isset($Repository->visibleColumns[$filter['field']]))
+                if (!isset($Repository->visibleColumns[$filter['field']])) {
                     unset($filters['rules'][$k]);
+                }
                 //type casting values
                 settype($filter['data'], $Repository->visibleColumns[$filter['field']]);
-                switch ($filter['op'])
-                {
+                switch ($filter['op']) {
                     case 'eq': //equal
                         $filter['op'] = '=';
                         break;
@@ -73,11 +70,11 @@ class JqGridJsonEncoder implements RequestedDataInterface {
                         break;
                     case 'bw': //begins with
                         $filter['op'] = 'like';
-                        $filter['data'] = $filter['data'] . '%';
+                        $filter['data'] = $filter['data'].'%';
                         break;
                     case 'bn': //does not begin with
                         $filter['op'] = 'not like';
-                        $filter['data'] = $filter['data'] . '%';
+                        $filter['data'] = $filter['data'].'%';
                         break;
                     case 'in': //is in
                         $filter['op'] = 'is in';
@@ -87,19 +84,19 @@ class JqGridJsonEncoder implements RequestedDataInterface {
                         break;
                     case 'ew': //ends with
                         $filter['op'] = 'like';
-                        $filter['data'] = '%' . $filter['data'];
+                        $filter['data'] = '%'.$filter['data'];
                         break;
                     case 'en': //does not end with
                         $filter['op'] = 'not like';
-                        $filter['data'] = '%' . $filter['data'];
+                        $filter['data'] = '%'.$filter['data'];
                         break;
                     case 'cn': //contains
                         $filter['op'] = 'like';
-                        $filter['data'] = '%' . $filter['data'] . '%';
+                        $filter['data'] = '%'.$filter['data'].'%';
                         break;
                     case 'nc': //does not contains
                         $filter['op'] = 'not like';
-                        $filter['data'] = '%' . $filter['data'] . '%';
+                        $filter['data'] = '%'.$filter['data'].'%';
                         break;
                     case 'nu': //is null
                         $filter['op'] = 'is null';
@@ -114,42 +111,33 @@ class JqGridJsonEncoder implements RequestedDataInterface {
                         break;
                 }
             }
-        }
-        else
-        {
-            $filters['rules'] = array();
+        } else {
+            $filters['rules'] = [];
         }
 
         $count = $Repository->getTotalNumberOfRows($filters['rules']);
 
-        if(!is_int($count))
-        {
-            throw new Exception("The method getTotalNumberOfRows must return an integer");
+        if (!is_int($count)) {
+            throw new Exception('The method getTotalNumberOfRows must return an integer');
         }
 
-        if( $count > 0 )
-        {
-            $totalPages = ceil($count/$limit);
-        }
-        else
-        {
+        if ($count > 0) {
+            $totalPages = ceil($count / $limit);
+        } else {
             $totalPages = 0;
         }
 
-        if ($page > $totalPages)
-        {
+        if ($page > $totalPages) {
             $page = $totalPages;
         }
 
-        if ($limit < 0 )
-        {
+        if ($limit < 0) {
             $limit = 0;
         }
 
         $start = $limit * $page - $limit;
 
-        if ($start < 0)
-        {
+        if ($start < 0) {
             $start = 0;
         }
 
@@ -157,11 +145,10 @@ class JqGridJsonEncoder implements RequestedDataInterface {
 
         $rows = $Repository->getRows($limit, $start, $sidx, $sord, $filters['rules']);
 
-        if(!is_array($rows) || (isset($rows[0]) && !is_array($rows[0])))
-        {
+        if (!is_array($rows) || (isset($rows[0]) && !is_array($rows[0]))) {
             throw new Exception("The method getRows must return an array of arrays, example: array(array('row 1 col 1','row 1 col 2'), array('row 2 col 1','row 2 col 2'))");
         }
 
-        return \Illuminate\Support\Facades\Response::json(array('page'=>$page, 'total'=>$totalPages, 'records'=>$count, 'rows'=>$rows));
+        return \Illuminate\Support\Facades\Response::json(['page'=>$page, 'total'=>$totalPages, 'records'=>$count, 'rows'=>$rows]);
     }
 }
